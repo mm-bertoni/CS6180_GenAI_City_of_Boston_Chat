@@ -218,3 +218,6 @@ __marimo__/
 .streamlit/secrets.toml
 
 open_ai_api_key.txt
+
+chroma_db/
+public-notice-pdfs/
