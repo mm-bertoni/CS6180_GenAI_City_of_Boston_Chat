@@ -23,6 +23,7 @@ Vector Store: ChromaDB
 The page texts and PDFs are separately added as docs to the ChromaDB. 
 
 **The metadata for each LangChain doc:**
+```
 notice_metadata = {
     "notice_id": ,
     "title":,
@@ -35,10 +36,16 @@ notice_metadata = {
     "status":,
     "checked_at":,
 }
+```
 
 **Metadata for PDFs**
+```
 "file_label": file name,
 "file_hash":,
 "source_type": "pdf"
+```
+
 **Metadata for Page Text:**
+```
 source_type": "page_text"
+```
