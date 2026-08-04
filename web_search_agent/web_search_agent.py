@@ -1,32 +1,30 @@
-from agents import WebSearchTool, Agent, Runner, Model
-from asyncio import run
+from orchestrator_agent import SubAgent
+from openai.types.responses import Response
 
-class WebSearchAgent():
-    def __init__(self):
+class WebSearchAgent(SubAgent):
 
-        self._search_tool = WebSearchTool(
-            search_context_size='medium', # takes value 'low', 'medium', 'high'
-            external_web_access = True
-        )
-        self._agent = Agent(
-            name='web_search', 
-            instructions="""You are an assistant that is given context about a user's inquiry,
-        and formulates any web searches that may aid in responding to the inquiry.""",
-            tools=[self._search_tool]
-        )
+    def __init__(self, model):
+        super().__init__()
+        self.tools.append({"type": "web_search"})
 
-    async def answer(self, question: str) -> str:
-        runner = Runner()
-        result = await runner.run(self._agent, input=question)
-        return result.final_output
+    def answer(self, query: str) -> SubAgent.SubAgentResponse:
+        response: Response = self.generate_response(f"""
+            You are an assistant that is given context about a user's query
+            and performs targeted web searches to gather information that will
+            help downstream agents respond to the query. 
+            
+            Here is a user query:
+            {query}
+            
+            Search the web for relevant information and return the links.
+        """)
 
+        # Gather any annotations
+        annotations = []
+        for output in response.output:
+            if output.type == 'message':
+                for content in output.content:
+                    if content.type == 'output_text' and content.annotations:
+                        annotations += content.annotations
 
-# For running interactively:
-async def main():
-    interactive_question = input("Initial context for the web search agent: ")
-    web_search_agent = WebSearchAgent()
-    interactive_answer = await web_search_agent.answer(interactive_question)
-    print(interactive_answer)
-
-if __name__ == '__main__':
-    run(main())
+        return (response.output_text, annotations)
