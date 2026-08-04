@@ -1,1 +1,2 @@
-openai-agents
+langchain-core
+openai
