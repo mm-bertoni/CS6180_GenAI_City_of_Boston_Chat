@@ -7,8 +7,10 @@ from langchain_huggingface import HuggingFaceEmbeddings
 
 from orchestrator_agent import SubAgent
 
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-COLLECTION_NAME = "public_notices"
+import scraping_helpers
+
+EMBEDDING_MODEL = scraping_helpers.EMBEDDING_MODEL
+COLLECTION_NAME = scraping_helpers.COLLECTION_NAME
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CHROMA_DB_PATH = REPO_ROOT / "chroma_db"
