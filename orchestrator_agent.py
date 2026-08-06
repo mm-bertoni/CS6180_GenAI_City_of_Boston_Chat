@@ -69,7 +69,7 @@ class OrchestratorAgent(Agent):
             
             Subagents:
             - RAGAgent: Finds any official City of Boston public notices relevant to the user's query
-            - WebSearchAgent: Searches the Internet for information relevant to the user's query
+            - WebSearchAgent: Searches the Internet for information relevant to the user's city government-related query
             - IgnoreAgent: Select this agent if the user's query is not related to city government
 
             User query:
