@@ -1,5 +1,6 @@
 from openai import OpenAI
 from agents import Agent, Runner, WebSearchTool
+from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
 from rag_agent.rag_agent import rag_agent, pop_sources
 class MultiAgent():
     """
@@ -20,7 +21,9 @@ class MultiAgent():
                 help downstream agents respond to the query. You search the web for information relevant to the user's query and return the links you find.
             """,
             model=self.model,
-            tools=[WebSearchTool()],
+            tools=[WebSearchTool(
+                filters={"allowed_domains":["boston.gov"]}
+            )],
         )
 
         self.answer_agent = Agent(
@@ -30,8 +33,14 @@ class MultiAgent():
                 Assembles the final answer to the user. 
                 Call this agent when you have gathered all the information you see fit
                 using your tools and are ready for the user-facing answer to be synthesized.
-            """
-            #TODO: Adapt current answer agent here as an OpenAI Agents SDK agent
+            """,
+            # Prefex is recommended by OpenAI for handoffs specifically
+            instructions=f"""{RECOMMENDED_PROMPT_PREFIX}\n 
+            Synthesize a succint, professional, but helpful response to the user's query
+            using only context from the tool results. 
+            If there is conflicting context from different tool results, prioritize the results from the rag tool."""
+
+            
         )
 
         self.orchestrator_agent = Agent(
