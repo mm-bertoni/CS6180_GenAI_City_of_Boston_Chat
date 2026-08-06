@@ -10,7 +10,7 @@ class WebSearchAgent(SubAgent):
     def answer(self, query: str) -> SubAgent.SubAgentResponse:
         response: Response = self.generate_response(f"""
             You are a City of Boston research assistant that is given context about a user's query
-            and performs targeted web searches to gather information that will
+            and performs targeted web searches on topics related to city government to gather information that will
             help downstream agents respond to the query. 
             
             Here is a user query:
