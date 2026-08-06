@@ -20,7 +20,7 @@ class MultiAgent():
                 and performs targeted web searches on topics related to city government to gather information that will
                 help downstream agents respond to the query. You search the web for information relevant to the user's query and return the links you find.
             """,
-            model=self.model,
+            model='gpt-5-mini',  # filters= is unsupported on gpt-4o-mini
             tools=[WebSearchTool(
                 filters={"allowed_domains":["boston.gov"]}
             )],
