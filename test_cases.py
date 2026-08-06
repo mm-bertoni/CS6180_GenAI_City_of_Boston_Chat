@@ -28,11 +28,11 @@ TEST_CASES = [
     },
     {
         "name": "Public testimony",
-        "prompt": "Can I testify at the August 6th Tree Removal Hearing??"
+        "prompt": "Can I testify at the August 1th Zoning Board of Appeal Hearing??"
         "expectations": {
             "expected_agents": ["RAGAgent", "AnswerAgent"],
             "should_return_citation": True,
-            "response_notes": "Valid meeting but no public testimony at this hearing"
+            "response_notes": "Valid meeting and public testimony allowed at this hearing"
         },
     },
     {
