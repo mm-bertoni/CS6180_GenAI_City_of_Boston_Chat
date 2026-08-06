@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Tuple, List
 from openai import OpenAI
 from openai.types.responses import Response
-from openai.types.responses.response_output_text import AnnotationURLCitation
-from langchain_core.documents import Document
 from web_search_agent.web_search_agent import WebSearchAgent
 from rag_agent.rag_agent import RAGAgent
 from ignore_agent.ignore_agent import IgnoreAgent
@@ -35,7 +33,7 @@ class SubAgent(Agent):
     Abstract base class from which any subagents called on by `OrchestratorAgent` inherit.
     """
 
-    type SubAgentResponse = Tuple[str, List[Document | AnnotationURLCitation]]
+    type SubAgentResponse = Tuple[str, List[dict]]
 
     @abstractmethod
     def answer(self, query: str) -> SubAgentResponse:
