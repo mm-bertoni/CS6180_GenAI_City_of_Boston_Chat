@@ -1,11 +1,23 @@
+"""RAG over City of Boston public notices, exposed to the orchestrator as a tool.
+
+The orchestrator imports `rag_agent` and wraps it with .as_tool(), matching the
+agents-as-tools pattern used for web search. Nothing here imports
+orchestrator_agent, so imports flow one way only.
+
+Sources travel out of band via pop_sources(), not through the tool's return value -
+see the comment on _LAST_SOURCES for why.
+
+    from rag_agent.rag_agent import rag_agent, pop_sources
+"""
+
 import json
 import os
 from pathlib import Path
 
+from agents import Agent, function_tool
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
-
-from orchestrator_agent import SubAgent
+from openai import OpenAI
 
 import scraping_helpers
 
@@ -28,6 +40,11 @@ TRUTHY = {"true", "yes", "y", "1"}
 FALSY = {"false", "no", "n", "0"}
 
 NO_ANSWER = "INSUFFICIENT_CONTEXT"
+
+# Model for this agent's own two LLM calls (query planning and answering). Kept
+# separate from the orchestrator's model so retrieval quality does not silently
+# change if the orchestrator switches models.
+LLM_MODEL = "gpt-4o-mini"
 
 EXTRACT_PROMPT = """You convert a user's question about Boston public notices into a search plan.
 
@@ -133,13 +150,19 @@ def dedupe_key(text):
     return " ".join(text.split())
 
 
-class RAGAgent(SubAgent):
+class RAGAgent:
+    """Retrieval plus a cited answer over the public notices collection.
+
+    Plain class on purpose. It used to inherit SubAgent, which no longer exists
+    now that the orchestrator uses the Agents SDK, so it owns its own client.
+    """
 
     def __init__(self, k: int = 4):
         if not os.environ.get("OPENAI_API_KEY"):
             os.environ["OPENAI_API_KEY"] = load_api_key()
 
-        super().__init__()
+        self.client = OpenAI()
+        self.model = LLM_MODEL
 
         self.k = k
         self._embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
@@ -167,11 +190,10 @@ class RAGAgent(SubAgent):
         return plan.get("search_text", query), filters or None
 
     def _client_chat(self, prompt: str, **kwargs) -> str:
-        """Chat completion via the client the base Agent built.
+        """One-shot chat completion.
 
-        Uses chat.completions rather than Agent.generate_response() because the
-        planning step needs response_format=json_object, which the Responses API
-        wrapper on the base class does not expose.
+        Uses chat.completions because the planning step needs
+        response_format=json_object to guarantee parseable JSON.
         """
         resp = self.client.chat.completions.create(
             model=self.model,
@@ -217,8 +239,11 @@ class RAGAgent(SubAgent):
             "text": doc.page_content,
         }
 
-    def answer(self, query: str) -> SubAgent.SubAgentResponse:
-        """Returns (answer_text, sources), empty sources(sources are plain dicts) means fall back to WebSearchAgent.
+    def answer(self, query: str) -> tuple[str, list[dict]]:
+        """Returns (answer_text, sources); sources are plain dicts.
+
+        Empty sources means the answer is not in the collection - either nothing
+        was retrieved, or the answer model judged what came back insufficient.
         """
         search_text, filters = self.extract_search_plan(query)
 
@@ -243,9 +268,92 @@ class RAGAgent(SubAgent):
         return text, sources
 
 
+# ---------------------------------------------------------------------------
+# Exposing the above to the orchestrator as an Agents SDK tool
+# ---------------------------------------------------------------------------
+
+# Built once, on first use. Constructing RAGAgent loads the embedding model and
+# opens ChromaDB (~25s), and the SDK may call the tool several times in one run,
+# so this must not happen per call.
+_RAG_AGENT: "RAGAgent | None" = None
+
+
+def get_agent(k: int = 4) -> "RAGAgent":
+    """The shared RAGAgent, created on first call."""
+    global _RAG_AGENT
+    if _RAG_AGENT is None:
+        _RAG_AGENT = RAGAgent(k=k)
+    return _RAG_AGENT
+
+
+# Sources from the most recent tool call.
+#
+# A tool's return value is turned into text for the calling model, so anything
+# returned there stops being structured data. Handing the model our dicts and
+# asking for them back would also let it retype - and therefore invent - URLs.
+# Instead the real dicts are stashed here and collected by pop_sources() after
+# the run, so the citation data the UI renders is never touched by a model.
+#
+# Module-level state, so this assumes one run at a time. Fine for Streamlit,
+# would need rethinking for concurrent users.
+_LAST_SOURCES: list[dict] = []
+
+
+def pop_sources() -> list[dict]:
+    """Take the sources gathered since the last call, and clear them."""
+    sources = list(_LAST_SOURCES)
+    _LAST_SOURCES.clear()
+    return sources
+
+
+@function_tool
+def search_public_notices(query: str) -> str:
+    """Search official City of Boston public notices for meetings and hearings.
+
+    Use this for questions about city government meetings, public hearings,
+    commissions, boards, agendas, public testimony, or cancelled meetings.
+    Returns a written answer with [n] citation markers, or says it could not
+    find anything.
+
+    Args:
+        query: The user's complete question, copied word for word. Pass the
+            whole question as the user phrased it - do NOT shorten it to
+            keywords. "retirement board meeting" fails where "when is the
+            retirement board meeting?" succeeds, because this tool needs a
+            real question to answer, not search terms.
+    """
+    text, sources = get_agent().answer(query)
+    _LAST_SOURCES.extend(sources)
+    return text
+
+
+# What the orchestrator imports and wraps with .as_tool().
+#
+# Note this adds an LLM between the orchestrator and the retrieval. It never sees
+# the retrieved chunks, only the finished prose below, so it adds no grounding and
+# does rewrite the text - the [n] markers usually do not survive it. The final
+# answer agent rewrites again anyway, so the markers are lost either way; the
+# source dicts are unaffected because they travel via pop_sources(), not through
+# this text. If we ever want inline citations end to end, put
+# `search_public_notices` in the orchestrator's tools list instead of this.
+rag_agent = Agent(
+    name="rag",
+    model=LLM_MODEL,
+    instructions=(
+        "You answer questions about City of Boston public notices. "
+        "Always call search_public_notices to get information - never answer "
+        "from your own knowledge. Return the tool's answer as it is written, "
+        "including its [n] citation markers, and do not add facts it does not "
+        "contain. If the tool says it could not find something, say exactly that."
+    ),
+    tools=[search_public_notices],
+)
+
+
 def format_sources(sources) -> str:
+    """Text rendering of the sources block, for the CLI in main()."""
     if not sources:
-        return "  (no sources - orchestrator would fall back to WebSearchAgent)"
+        return "  (no sources - nothing in the collection answered this)"
     lines = ["", "Sources:"]
     for i, s in enumerate(sources, 1):
         where = s["file_label"] or "notice webpage"
@@ -255,7 +363,8 @@ def format_sources(sources) -> str:
 
 
 def main():
-    agent = RAGAgent()
+    """Exercises RAGAgent directly, without the orchestrator or the SDK."""
+    agent = get_agent()
     print(f"{agent.chunk_count()} chunks loaded")
     query = input("Question about Boston public notices: ")
     answer_text, sources = agent.answer(query)

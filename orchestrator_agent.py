@@ -1,9 +1,6 @@
-from typing import Tuple, List
 from openai import OpenAI
-from agents import Agent, Runner
-
-type SubAgentResponse = Tuple[str, List[dict]]
-
+from agents import Agent, Runner, WebSearchTool
+from rag_agent.rag_agent import rag_agent, pop_sources
 class MultiAgent():
     """
     Orchestrates multiple agents to answer the user query.
@@ -14,11 +11,7 @@ class MultiAgent():
         self.model = 'gpt-4o-mini'  # model used for orchestrator and all subagents
 
         # Subagents
-        self.rag_agent = Agent(
-            name='rag',
-            model=self.model,
-            #TODO: Adapt current rag agent here as an OpenAI Agents SDK agent
-        )
+        self.rag_agent = rag_agent
         self.web_search_agent = Agent(
             name='web_search', 
             instructions=f"""
@@ -27,7 +20,7 @@ class MultiAgent():
                 help downstream agents respond to the query. You search the web for information relevant to the user's query and return the links you find.
             """,
             model=self.model,
-            output_type=SubAgentResponse
+            tools=[WebSearchTool()],
         )
 
         self.answer_agent = Agent(
@@ -46,7 +39,7 @@ class MultiAgent():
             model=self.model,
             tools=[
                 self.rag_agent.as_tool(
-                    tool_name='orchestrator',
+                    tool_name='rag',
                     tool_description='Can search through City of Boston public notices'
                 ), 
                 self.web_search_agent.as_tool(
@@ -63,6 +56,6 @@ class MultiAgent():
             """
         )
 
-    async def answer(self, user_query: str) -> str:
+    async def answer(self, user_query: str) -> tuple[str, list[dict]]:
         result = await Runner.run(self.orchestrator_agent, user_query)
-        return result.final_output
+        return result.final_output, pop_sources()
