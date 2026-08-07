@@ -38,7 +38,7 @@ class MultiAgent():
             """,
             # Prefex is recommended by OpenAI for handoffs specifically
             instructions=f"""{RECOMMENDED_PROMPT_PREFIX}\n 
-            Synthesize a succint, professional, but helpful response to the user's query
+            Synthesize a succint and helpful response (at most 2 paragraphs) to the user's query
             using only context from the tool results. 
             If there is conflicting context from different tool results, prioritize the results from the rag tool."""
         )
