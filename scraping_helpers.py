@@ -238,6 +238,12 @@ vectorstore = Chroma(
     persist_directory=CHROMA_DB_PATH,
 )
 
+# Prepended to every chunk's text before embedding.
+def chunk_header(meta):
+    title = (meta.get("title") or "").replace(" | Boston.gov", "")
+    return f"{title} | event {meta.get('event_datetime')}"
+
+
 # Check if something is already embedded to Chroma
 def already_embedded(vectorstore, notice_id, file_hash=None, text_hash=None):
     notice_dict = {"notice_id": notice_id}
