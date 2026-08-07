@@ -3,7 +3,7 @@ from agents import Agent, Runner, WebSearchTool, GuardrailFunctionOutput, InputG
 from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
 from rag_agent.rag_agent import rag_agent, pop_sources
 from agents.guardrail import input_guardrail
-
+import json, time 
 class MultiAgent():
     """
     Orchestrates multiple agents to answer the user query.
@@ -74,27 +74,63 @@ class MultiAgent():
                 ), 
                 self.web_search_agent.as_tool(
                     tool_name='web_search',
-                    tool_description='Can search the Internet for relevant information'
+                    tool_description='Can search the Internet for relevant City of Boston information'
                 )
             ],
             input_guardrails=[relevance_guardrail],
             instructions="""
                 You are a City of Boston research assistant that responds to citizens' queries.
                 Use the tools you are given, at your discretion, to gather information that is relevant to a query.
+                If you find sufficient information about a public notice/event using the rag tool, it is not necessary to also use the web_search tool. 
                 The information you gather will be passed to another agent, which will deliver a final answer 
                 to the user based on the information you provide.
             """
         )
 
-    async def answer(self, user_query: str) -> tuple[str, list[dict]]:
-        """
-        Generate an answer for the given user query.
-        Returns a tuple with (1) the generated answer and (2) a list of sources consulted.
-        """
+
+
+    async def answer(self, user_query: str) -> tuple[str, list[dict], dict]:
+        t0 = time.perf_counter()
+        trace_info = {"question": user_query, "tool_calls": []}
+        calls_by_id = {}
+
         try:
-            orchestrator_result = (await Runner.run(self.orchestrator_agent, user_query)).final_output
+            result = await Runner.run(self.orchestrator_agent, user_query)
+
+            for item in result.new_items:
+                if item.type == "tool_call_item":
+                    raw = item.raw_item
+                    args = getattr(raw, "arguments", None)
+                    try:
+                        args = json.loads(args) if isinstance(args, str) else args
+                    except json.JSONDecodeError:
+                        pass  # keep the raw string if the model emitted something odd
+                    call = {
+                        "name": getattr(raw, "name", type(raw).__name__),
+                        "input": args,
+                        "output": None,
+                }
+                    trace_info["tool_calls"].append(call)
+                    call_id = getattr(raw, "call_id", None)
+                    if call_id:
+                        calls_by_id[call_id] = call
+
+                elif item.type == "tool_call_output_item":
+                    call_id = (item.raw_item or {}).get("call_id")
+                    if call_id in calls_by_id:
+                        calls_by_id[call_id]["output"] = item.output
+                    else:
+                        trace_info["tool_calls"].append({"name": None, "input": None, "output": item.output})
+
             sources = pop_sources()
-            final_answer = (await Runner.run(self.answer_agent, orchestrator_result)).final_output
-            return final_answer, sources
+            final_answer = (await Runner.run(self.answer_agent, result.final_output)).final_output
+
         except InputGuardrailTripwireTriggered:
-            return "Sorry, that doesn't seem to be related to the government of the City of Boston.", []
+            final_answer = "Sorry, that doesn't seem to be related to the government of the City of Boston."
+            sources = []
+            trace_info["guardrail_tripped"] = True
+
+        trace_info["tools_called"] = [c["name"] for c in trace_info["tool_calls"]]
+        trace_info["sources"] = sources
+        trace_info["latency_ms"] = round((time.perf_counter() - t0) * 1000, 1)
+        return final_answer, sources, trace_info
