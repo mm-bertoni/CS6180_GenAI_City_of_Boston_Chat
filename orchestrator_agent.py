@@ -61,7 +61,7 @@ class MultiAgent():
             result = await Runner.run(self.guardrail_agent, input, context=ctx.context)
             return GuardrailFunctionOutput(
                 output_info=result.final_output, 
-                tripwire_triggered=result.final_output.is_math_homework,
+                tripwire_triggered=result.final_output,
             )
 
         self.orchestrator_agent = Agent(
