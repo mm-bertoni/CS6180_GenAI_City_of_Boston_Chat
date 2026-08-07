@@ -58,8 +58,8 @@ class MultiAgent():
             instructions="""
                 You are a City of Boston research assistant that responds to citizens' queries.
                 Use the tools you are given, at your discretion, to gather information that is relevant to a query.
-                When you have gathered all the information you see fit, call upon the handoff agent,
-                which will assemble and deliver a final answer to the user.
+                The information you gather will be passed to another agent, which will deliver a final answer 
+                to the user based on the information you provide.
             """
         )
 
