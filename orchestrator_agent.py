@@ -2,6 +2,7 @@ from openai import OpenAI
 from agents import Agent, Runner, WebSearchTool
 from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
 from rag_agent.rag_agent import rag_agent, pop_sources
+
 class MultiAgent():
     """
     Orchestrates multiple agents to answer the user query.
@@ -39,8 +40,6 @@ class MultiAgent():
             Synthesize a succint, professional, but helpful response to the user's query
             using only context from the tool results. 
             If there is conflicting context from different tool results, prioritize the results from the rag tool."""
-
-            
         )
 
         self.orchestrator_agent = Agent(
@@ -56,7 +55,6 @@ class MultiAgent():
                     tool_description='Can search the Internet for relevant information'
                 )
             ],
-            handoffs=[self.answer_agent],
             instructions="""
                 You are a City of Boston research assistant that responds to citizens' queries.
                 Use the tools you are given, at your discretion, to gather information that is relevant to a query.
@@ -66,5 +64,11 @@ class MultiAgent():
         )
 
     async def answer(self, user_query: str) -> tuple[str, list[dict]]:
-        result = await Runner.run(self.orchestrator_agent, user_query)
-        return result.final_output, pop_sources()
+        """
+        Generate an answer for the given user query.
+        Returns a tuple with (1) the generated answer and (2) a list of sources consulted.
+        """
+        orchestrator_result = (await Runner.run(self.orchestrator_agent, user_query)).final_output
+        sources = pop_sources()
+        final_answer = (await Runner.run(self.answer_agent, orchestrator_result)).final_output
+        return final_answer, sources
