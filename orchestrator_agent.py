@@ -1,7 +1,8 @@
 from openai import OpenAI
-from agents import Agent, Runner, WebSearchTool
+from agents import Agent, Runner, WebSearchTool, GuardrailFunctionOutput, InputGuardrailTripwireTriggered, RunContextWrapper, TResponseInputItem
 from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
 from rag_agent.rag_agent import rag_agent, pop_sources
+from agents.guardrail import input_guardrail
 
 class MultiAgent():
     """
@@ -42,6 +43,27 @@ class MultiAgent():
             If there is conflicting context from different tool results, prioritize the results from the rag tool."""
         )
 
+        self.guardrail_agent = Agent(
+            name='guardrail',
+            model=self.model,
+            instructions="""
+                Check if the user's query is related to Boston city government. 
+                If it is unrelated, return `True`. Otherwise, return `False`
+            """,
+            output_type=bool,
+        )
+
+        @input_guardrail(run_in_parallel=False)
+        async def relevance_guardrail(
+            ctx: RunContextWrapper[None], 
+            agent: Agent, input: str | list[TResponseInputItem]
+        ) -> GuardrailFunctionOutput:
+            result = await Runner.run(self.guardrail_agent, input, context=ctx.context)
+            return GuardrailFunctionOutput(
+                output_info=result.final_output, 
+                tripwire_triggered=result.final_output,
+            )
+
         self.orchestrator_agent = Agent(
             name='orchestrator',
             model=self.model,
@@ -55,6 +77,7 @@ class MultiAgent():
                     tool_description='Can search the Internet for relevant information'
                 )
             ],
+            input_guardrails=[relevance_guardrail],
             instructions="""
                 You are a City of Boston research assistant that responds to citizens' queries.
                 Use the tools you are given, at your discretion, to gather information that is relevant to a query.
@@ -68,7 +91,10 @@ class MultiAgent():
         Generate an answer for the given user query.
         Returns a tuple with (1) the generated answer and (2) a list of sources consulted.
         """
-        orchestrator_result = (await Runner.run(self.orchestrator_agent, user_query)).final_output
-        sources = pop_sources()
-        final_answer = (await Runner.run(self.answer_agent, orchestrator_result)).final_output
-        return final_answer, sources
+        try:
+            orchestrator_result = (await Runner.run(self.orchestrator_agent, user_query)).final_output
+            sources = pop_sources()
+            final_answer = (await Runner.run(self.answer_agent, orchestrator_result)).final_output
+            return final_answer, sources
+        except InputGuardrailTripwireTriggered:
+            return "Sorry, that doesn't seem to be related to the government of the City of Boston.", []
