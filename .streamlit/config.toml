@@ -1,0 +1,75 @@
+# sentence-transformers pulls in torch, and Streamlit's default source watcher
+# walks torch.classes.__path__ and raises on every rerun. Nothing here needs
+# hot reload badly enough to fight that.
+[server]
+fileWatcherType = "none"
+
+# "Civic editorial": a serif display face over a sans body, warm paper in light
+# and warm near-black in dark, with a bronze accent instead of the old navy.
+# Both modes are defined so the toggle in the app menu keeps working.
+#
+# Instrument Serif ships one weight plus a true italic, which is why the heading
+# weights below are all 400 - asking for 600 would make the browser synthesise a
+# fake bold and the display type would look smeared.
+[theme]
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+headingFont = "'Instrument Serif':https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap"
+codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+baseFontSize = 15
+headingFontSizes = ["56px", "30px", "22px", "17px", "15px", "13px"]
+headingFontWeights = [400, 400, 400, 500, 500, 500]
+baseRadius = "6px"
+buttonRadius = "full"
+linkUnderline = false
+showWidgetBorder = true
+showSidebarBorder = true
+
+# Cool paper rather than pure white, so light mode reads as the same publication
+# as dark rather than a different app.
+[theme.light]
+primaryColor = "#0B4F87"            # Boston navy, dark enough for white button text
+backgroundColor = "#FCFCFD"
+secondaryBackgroundColor = "#EFF3F8"
+textColor = "#141A21"
+linkColor = "#1A6FB5"
+borderColor = "#DCE3EC"
+codeBackgroundColor = "#EFF3F8"
+codeTextColor = "#141A21"
+blueColor = "#1A6FB5"
+orangeColor = "#8A5A00"             # demo badges; darkened so they stay legible on paper
+yellowColor = "#7A5612"
+greenColor = "#1F6B45"
+redColor = "#A32A2A"
+grayColor = "#5D6874"
+
+[theme.light.sidebar]
+backgroundColor = "#EFF3F8"
+secondaryBackgroundColor = "#E2EAF3"
+borderColor = "#DCE3EC"
+textColor = "#141A21"
+primaryColor = "#0B4F87"
+
+# Near-black with a little blue in it rather than pure #000: the serif and the
+# pale-blue accent both sit better on a base that is tinted the same way.
+[theme.dark]
+primaryColor = "#1F5C99"            # Streamlit puts white text on this, so it stays deep
+backgroundColor = "#0A0D12"
+secondaryBackgroundColor = "#141A22"
+textColor = "#E3E9F0"               # off-white, not pure #FFF
+linkColor = "#8FC1EE"
+borderColor = "#242D38"
+codeBackgroundColor = "#141A22"
+codeTextColor = "#8FC1EE"
+blueColor = "#8FC1EE"
+orangeColor = "#E0B87A"
+yellowColor = "#E0C87A"
+greenColor = "#6FBF8F"
+redColor = "#E08C8C"
+grayColor = "#8894A2"
+
+[theme.dark.sidebar]
+backgroundColor = "#070A0E"
+secondaryBackgroundColor = "#141A22"
+borderColor = "#242D38"
+textColor = "#E3E9F0"
+primaryColor = "#1F5C99"
