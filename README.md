@@ -21,13 +21,37 @@ scraping_helpers.py: Common helper functions and variables for common use across
 public-notice-pdfs/: Folder where the scraped PDFs are saved as well as the scraping log file \
 chroma_db/: Persistance folder for chroma_db \ 
 
+### User Interface
+ui/app.py: Streamlit chat app. Page layout, chat history, source cards, badges. Knows nothing about agents. \
+ui/backend.py: The only file that touches the agents. Builds MultiAgent once, wraps its async call, returns (answer, sources, trace). \
+ui/formatting.py: Pure functions - UTC to Boston time, citation parsing, grouping sources by notice. No Streamlit, no I/O. \
+ui/styles.py: Optional CSS. Deleting the import and the inject_styles() call removes it cleanly. \
+ui/tests/: Unit tests for formatting.py. Run with `python -m pytest ui/tests/ -q` \
+.streamlit/config.toml: Theme (light and dark) plus `fileWatcherType = "none"`, which is required - torch breaks Streamlit's file watcher. \
+
 ## Tech Stack
 Public Notice Scraping: requests, BeatifulSoup \
 Embedding Model: HuggingFace: sentence-transformers/all-MiniLM-L6-v2 \
 PDF Extraction: Docling \
 RAG Documents: LangChain \
 Vector Store: ChromaDB \
+Agent Framework: OpenAI Agents SDK \
+User Interface: Streamlit \
 
+## Running the UI
+
+**Prerequisites**
+- `open_ai_api_key.txt` in the repo root, containing the key
+- A populated `chroma_db/`. It is gitignored, so on a fresh clone run `notice-scraping.ipynb` and then `archive-scraping.ipynb` first.
+
+**Run it**
+```
+venv/Scripts/python.exe -m streamlit run ui/app.py
+```
+
+The first launch takes about 30 seconds while the embedding model loads. That is
+cached afterwards, so later questions only pay for the agents themselves
+(roughly 10-15s for a notice question, longer if it falls back to web search).
 
 ## RAG Schema
 The page texts and PDFs are separately added as docs to the ChromaDB. 
@@ -118,3 +142,4 @@ Example:
     ...
   ]
 )
+```
