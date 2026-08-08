@@ -4,6 +4,11 @@ from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
 from rag_agent.rag_agent import rag_agent, pop_sources
 from agents.guardrail import input_guardrail
 import json, time 
+from datetime import datetime
+from agents.decorators import tool
+
+
+
 class MultiAgent():
     """
     Orchestrates multiple agents to answer the user query.
@@ -12,7 +17,8 @@ class MultiAgent():
     def __init__(self):
         self.client = OpenAI()
         self.model = 'gpt-4o-mini'  # model used for orchestrator and all subagents
-
+    
+            
         # Subagents
         self.rag_agent = rag_agent
         self.web_search_agent = Agent(
@@ -75,16 +81,16 @@ class MultiAgent():
                 self.web_search_agent.as_tool(
                     tool_name='web_search',
                     tool_description='Can search the Internet for relevant City of Boston information'
-                )
+                ),
+        
             ],
             input_guardrails=[relevance_guardrail],
-            instructions="""
-                You are a City of Boston research assistant that responds to citizens' queries.
+            instructions="""You are a City of Boston research assistant that responds to citizens' queries.
                 Use the tools you are given, at your discretion, to gather information that is relevant to a query.
                 If you find sufficient information about a public notice/event using the rag tool, it is not necessary to also use the web_search tool. 
+                
                 The information you gather will be passed to another agent, which will deliver a final answer 
-                to the user based on the information you provide.
-            """
+                to the user based on the information you provide."""
         )
 
 
