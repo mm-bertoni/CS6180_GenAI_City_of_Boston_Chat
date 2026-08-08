@@ -4,18 +4,14 @@ from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
 from rag_agent.rag_agent import rag_agent, pop_sources
 from agents.guardrail import input_guardrail
 from pydantic import BaseModel
+from datetime import datetime
+from agents.decorators import tool
+import json, time 
 
 class Relevance(BaseModel):
     reasoning: str
     is_unrelated: bool
-
-import json, time 
-from datetime import datetime
-from agents.decorators import tool
-
-
-
-
+    
 class MultiAgent():
     """
     Orchestrates multiple agents to answer the user query.
@@ -155,10 +151,11 @@ class MultiAgent():
             sources = pop_sources()
             final_answer = (await Runner.run(self.answer_agent, result.final_output)).final_output
 
-        except InputGuardrailTripwireTriggered:
+        except InputGuardrailTripwireTriggered as exc:
             final_answer = "Sorry, that doesn't seem to be related to the government of the City of Boston."
             sources = []
             trace_info["guardrail_tripped"] = True
+            trace_info["guardrail_reason"] = exc.guardrail_result.output.output_info.reasoning
 
         trace_info["tools_called"] = [c["name"] for c in trace_info["tool_calls"]]
         trace_info["sources"] = sources
