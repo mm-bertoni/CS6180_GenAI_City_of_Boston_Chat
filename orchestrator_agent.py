@@ -49,7 +49,12 @@ class MultiAgent():
             instructions=f"""{RECOMMENDED_PROMPT_PREFIX}\n 
             Synthesize a succint and helpful response (at most 2 paragraphs) to the user's query
             using only context from the tool results. 
-            If there is conflicting context from different tool results, prioritize the results from the rag tool."""
+            If there is conflicting context from different tool results, prioritize the results from the rag tool.
+            Your input has two parts: the user's original question, and research findings
+            gathered by tools. Answer the question using only those findings. Never reply
+            to the findings as if the user wrote them.
+            Reproduce dates and times exactly as the findings state them, including the
+            EDT/EST suffix. Never convert a time yourself."""
         )
 
         self.guardrail_agent = Agent(
@@ -149,7 +154,11 @@ class MultiAgent():
                         trace_info["tool_calls"].append({"name": None, "input": None, "output": item.output})
 
             sources = pop_sources()
-            final_answer = (await Runner.run(self.answer_agent, result.final_output)).final_output
+            handoff_input = (
+                f"User question:\n{user_query}\n\n"
+                f"Research findings from the tools:\n{result.final_output}"
+            )
+            final_answer = (await Runner.run(self.answer_agent, handoff_input)).final_output
 
         except InputGuardrailTripwireTriggered as exc:
             final_answer = "Sorry, that doesn't seem to be related to the government of the City of Boston."
