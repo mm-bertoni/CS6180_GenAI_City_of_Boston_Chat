@@ -1,6 +1,7 @@
 
 import re
 from datetime import datetime
+from urllib.parse import unquote, urlparse, urlunparse
 from zoneinfo import ZoneInfo
 
 BOSTON_TZ = "America/New_York"
@@ -86,6 +87,69 @@ def linkify_citations(text, sources):
         return f"{marker[0]}{', '.join(links)}{marker[-1]}"
 
     return CITATION.sub(replace, text)
+
+
+def split_sources(sources):
+    """Separate retrieved notices from web search results.
+
+    They are two different things and render differently: a notice is a filed
+    document with a date, a type and quotable text, while a web result is only a
+    URL the search tool visited. Web results are appended after notices by the
+    orchestrator, so notice numbering is the same either way.
+    """
+    notices = [s for s in sources if not s.get("is_web_source")]
+    web = [s for s in sources if s.get("is_web_source")]
+    return notices, web
+
+
+def clean_web_url(url):
+    """Strip the utm_source the search API appends to every result.
+
+    The tool returns links like `...?utm_source=openai`, which is tracking we did
+    not ask for and which makes the URL differ from the one on boston.gov.
+    """
+    if not url:
+        return url
+    parts = urlparse(url)
+    kept = "&".join(
+        piece for piece in parts.query.split("&")
+        if piece and not piece.startswith("utm_")
+    )
+    return urlunparse(parts._replace(query=kept))
+
+
+def web_link_text(url):
+    """`https://www.boston.gov/departments/parking-clerk/how-pay` -> readable text.
+
+    Percent-decoded first: boston.gov links to filenames with spaces in them, and
+    left raw those render as "Information%20statement%202024 1.pdf".
+    """
+    parts = urlparse(clean_web_url(url or ""))
+    tail = unquote((parts.path or "").rstrip("/").rsplit("/", 1)[-1])
+    if not tail:
+        return parts.netloc or url
+    # Keep the extension off the label; the link still points at the file.
+    for suffix in (".pdf", ".html", ".htm", ".aspx"):
+        if tail.lower().endswith(suffix):
+            tail = tail[: -len(suffix)]
+            break
+    return tail.replace("-", " ").replace("_", " ").strip().capitalize() or parts.netloc
+
+
+def dedupe_web_sources(web):
+    """One entry per URL, in first-seen order.
+
+    A single search reports the same page once per query it ran, so the raw list
+    is mostly repeats - five identical URLs for one question is normal.
+    """
+    seen, unique = set(), []
+    for src in web:
+        url = clean_web_url(src.get("url"))
+        if not url or url in seen:
+            continue
+        seen.add(url)
+        unique.append({**src, "url": url})
+    return unique
 
 
 def group_sources(sources):

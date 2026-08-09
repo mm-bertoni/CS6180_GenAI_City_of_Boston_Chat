@@ -1,11 +1,9 @@
 from openai import OpenAI
-from agents import Agent, Runner, WebSearchTool, GuardrailFunctionOutput, InputGuardrailTripwireTriggered, RunContextWrapper, TResponseInputItem
+from agents import Agent, Runner, WebSearchTool, GuardrailFunctionOutput, InputGuardrailTripwireTriggered, RunContextWrapper, TResponseInputItem, ModelSettings
 from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
-from rag_agent.rag_agent import rag_agent, pop_sources
+from rag_agent.rag_agent import rag_agent, pop_sources, set_question
 from agents.guardrail import input_guardrail
 from pydantic import BaseModel
-from datetime import datetime
-from agents.decorators import tool
 import json, time 
 
 class Relevance(BaseModel):
@@ -16,6 +14,11 @@ class MultiAgent():
     """
     Orchestrates multiple agents to answer the user query.
     """
+
+    def pop_web_sources(self) -> list[dict]:
+        sources = self.web_sources.copy()
+        self.web_sources.clear()
+        return sources
 
     def __init__(self):
         self.client = OpenAI()
@@ -32,10 +35,23 @@ class MultiAgent():
                 help downstream agents respond to the query. You search the web for information relevant to the user's query and return the links you find.
             """,
             model='gpt-5-mini',  # filters= is unsupported on gpt-4o-mini
-            tools=[WebSearchTool(
-                filters={"allowed_domains":["boston.gov"]}
-            )],
+            tools=[WebSearchTool(filters={"allowed_domains":["boston.gov"]})],
+            model_settings=ModelSettings(
+                response_include=["web_search_call.action.sources"],
+            ),
         )
+        self.web_sources = []
+        async def extract_web_search_result(run_result):
+            # To process web_search_agent's results
+            for response in run_result.raw_responses:
+                for item in response.output:
+                    if getattr(item, "type", None) == "web_search_call":
+                        for source in item.action.sources or []:
+                            self.web_sources.append({
+                                "is_web_source": True,
+                                "url": source.url
+                            })
+            return run_result.final_output
 
         self.answer_agent = Agent(
             name='answer',
@@ -105,7 +121,8 @@ class MultiAgent():
                 ), 
                 self.web_search_agent.as_tool(
                     tool_name='web_search',
-                    tool_description='Can search the Internet for relevant City of Boston information'
+                    tool_description='Can search the Internet for relevant City of Boston information',
+                    custom_output_extractor=extract_web_search_result
                 ),
         
             ],
@@ -127,6 +144,7 @@ class MultiAgent():
         calls_by_id = {}
 
         try:
+            set_question(user_query)
             result = await Runner.run(self.orchestrator_agent, user_query)
 
             for item in result.new_items:
@@ -141,7 +159,7 @@ class MultiAgent():
                         "name": getattr(raw, "name", type(raw).__name__),
                         "input": args,
                         "output": None,
-                }
+                    }
                     trace_info["tool_calls"].append(call)
                     call_id = getattr(raw, "call_id", None)
                     if call_id:
@@ -154,7 +172,7 @@ class MultiAgent():
                     else:
                         trace_info["tool_calls"].append({"name": None, "input": None, "output": item.output})
 
-            sources = pop_sources()
+            sources = pop_sources() + self.pop_web_sources()
             handoff_input = (
                 f"User question:\n{user_query}\n\n"
                 f"Research findings from the tools:\n{result.final_output}"
