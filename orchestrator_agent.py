@@ -121,6 +121,7 @@ class MultiAgent():
 
 
     async def answer(self, user_query: str) -> tuple[str, list[dict], dict]:
+        # Time for latency
         t0 = time.perf_counter()
         trace_info = {"question": user_query, "tool_calls": []}
         calls_by_id = {}
