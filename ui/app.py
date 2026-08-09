@@ -196,6 +196,14 @@ def clear_conversation():
     st.session_state.pending_prompt = None
 
 
+# The search tool reports every page it opened, which for a broad question is
+# closer to twenty than to five. Listing them all buries the useful ones and
+# makes the answer look less considered than it is, so only the first few are
+# shown and the rest go behind a disclosure. Nothing is hidden outright: which
+# pages were consulted is exactly the thing this app is meant to expose.
+MAX_WEB_LINKS = 5
+
+
 def render_web_sources(web):
     """Web results: a URL"""
     web = dedupe_web_sources(web)
@@ -208,8 +216,15 @@ def render_web_sources(web):
             ":material/travel_explore: From a Boston.gov web search, not the "
             "indexed notices. These pages were visited to answer the question."
         )
-        for src in web:
+        for src in web[:MAX_WEB_LINKS]:
             st.markdown(f"- [{web_link_text(src['url'])}]({src['url']})")
+
+        overflow = web[MAX_WEB_LINKS:]
+        if overflow:
+            with st.expander(f"{len(overflow)} more pages searched",
+                             icon=":material/more_horiz:"):
+                for src in overflow:
+                    st.markdown(f"- [{web_link_text(src['url'])}]({src['url']})")
 
 
 def render_sources(sources, turn_index=0):
@@ -231,7 +246,7 @@ def render_sources(sources, turn_index=0):
     for _notice_id, items in group_sources(notices):
         head = items[0][1]
         with st.container(border=True, key=f"source_{turn_index}_{_notice_id}"):
-            st.markdown(f"**[{getattr(head, 'title', 'No title')}]({head['url']})**")
+            st.markdown(f"**[{head.get('title') or 'Untitled notice'}]({head['url']})**")
             when = format_event_datetime(head.get("event_datetime"))
             meta = f":material/event: {when}" if when else ""
             st.caption(f"{meta}  ·  {citation_label([i for i, _ in items])}")

@@ -1,7 +1,7 @@
 
 import re
 from datetime import datetime
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import unquote, urlparse, urlunparse
 from zoneinfo import ZoneInfo
 
 BOSTON_TZ = "America/New_York"
@@ -119,12 +119,21 @@ def clean_web_url(url):
 
 
 def web_link_text(url):
-    """`https://www.boston.gov/departments/parking-clerk/how-pay` -> readable text."""
+    """`https://www.boston.gov/departments/parking-clerk/how-pay` -> readable text.
+
+    Percent-decoded first: boston.gov links to filenames with spaces in them, and
+    left raw those render as "Information%20statement%202024 1.pdf".
+    """
     parts = urlparse(clean_web_url(url or ""))
-    tail = (parts.path or "").rstrip("/").rsplit("/", 1)[-1]
+    tail = unquote((parts.path or "").rstrip("/").rsplit("/", 1)[-1])
     if not tail:
         return parts.netloc or url
-    return tail.replace("-", " ").replace("_", " ").capitalize()
+    # Keep the extension off the label; the link still points at the file.
+    for suffix in (".pdf", ".html", ".htm", ".aspx"):
+        if tail.lower().endswith(suffix):
+            tail = tail[: -len(suffix)]
+            break
+    return tail.replace("-", " ").replace("_", " ").strip().capitalize() or parts.netloc
 
 
 def dedupe_web_sources(web):

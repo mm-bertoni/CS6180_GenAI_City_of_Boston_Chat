@@ -47,7 +47,6 @@ class MultiAgent():
                 for item in response.output:
                     if getattr(item, "type", None) == "web_search_call":
                         for source in item.action.sources or []:
-                            print("SOURCE:", source.url)
                             self.web_sources.append({
                                 "is_web_source": True,
                                 "url": source.url
