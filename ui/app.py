@@ -186,7 +186,7 @@ def render_sources(sources, turn_index=0):
     for _notice_id, items in group_sources(sources):
         head = items[0][1]
         with st.container(border=True, key=f"source_{turn_index}_{_notice_id}"):
-            st.markdown(f"**[{head['title']}]({head['url']})**")
+            st.markdown(f"**[{getattr(head, 'title', 'No title')}]({head['url']})**")
             when = format_event_datetime(head.get("event_datetime"))
             meta = f":material/event: {when}" if when else ""
             st.caption(f"{meta}  ·  {citation_label([i for i, _ in items])}")
