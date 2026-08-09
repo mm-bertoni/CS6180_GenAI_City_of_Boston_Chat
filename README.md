@@ -1,25 +1,31 @@
-◊# CS6180_GenAI_Final_Project_City_of_Boston_RAG
-Final project for NU CS6180 Foundations of Generative AI on RAG for City of Boston Public Notices
+◊# CS6180_GenAI_Final_Project_City_of_Boston_Chat
+Final project for NU CS6180 Foundations of Generative AI a Multi-Agentic Chatbot for the  City of Boston with RAG on Public Notices
 
 ## Team Members
 Margaret Bertoni \
 Aidan Domondon \
-Mohammad Aasim Shaikh \
+Mohammad Aasim Shaikh 
 
 ## Project Description
-We want to increase the accessibility of the City of Boston website to the general public while maintaining trust. The City of Boston's website currently has an AI Summary function, but it's citability is very limited, particularly when asking about public notices (for official meetings).
-The public notices are stored as webpages, but also often attach PDFs with additional information to them.
+
+City government websites can be difficult to navigate, particularly if a user isn’t familiar with the various departments and resources available. 
+Allowing citizens to interact with the website using natural language would lower some of those barriers. \
+
+The public notices are stored as webpages, but also often attach PDFs with additional information to them, so we wanted to use RAG to ensure that information from the PDFs is accessible. \
+
 Our project is a multi-agentic AI chatbot that uses RAG for questions about public notices/official meetings and a web search agent for other relevant city-government related questions. 
 
 ## File Descriptions
 ### Agents
+rag_agent/rag_agent.py: RAG Agent
+orchestrator_agent.py: Web Search Agent, Answer Agent, Guardrail Agent and Orchestrator Agent 
 
 ### Public Notice Scraping
 notice-scraping.ipynb: Jupyter notebook to scrape all of the current public notices (for future public meetings) \
 archive-scraping.ipynb: Jupyter notebook to scrape the most recent 5% of archived public notices (subset selected due to large size of archive records) \ 
 scraping_helpers.py: Common helper functions and variables for common use across current and archive notice scraping. \
 public-notice-pdfs/: Folder where the scraped PDFs are saved as well as the scraping log file \
-chroma_db/: Persistance folder for chroma_db \ 
+chroma_db/: Persistance folder for chroma_db 
 
 ### User Interface
 ui/app.py: Streamlit chat app. Page layout, chat history, source cards, badges. Knows nothing about agents. \
@@ -27,7 +33,13 @@ ui/backend.py: The only file that touches the agents. Builds MultiAgent once, wr
 ui/formatting.py: Pure functions - UTC to Boston time, citation parsing, grouping sources by notice. No Streamlit, no I/O. \
 ui/styles.py: Optional CSS. Deleting the import and the inject_styles() call removes it cleanly. \
 ui/tests/: Unit tests for formatting.py. Run with `python -m pytest ui/tests/ -q` \
-.streamlit/config.toml: Theme (light and dark) plus `fileWatcherType = "none"`, which is required - torch breaks Streamlit's file watcher. \
+.streamlit/config.toml: Theme (light and dark) plus `fileWatcherType = "none"`, which is required - torch breaks Streamlit's file watcher. 
+
+### Evaluation/Testing
+eval_testing.ipynb: Runs 21 test queries and compares the resulting sources and tool_calls to the expecation. Also calculates latency (across the entire test, and then segmented by tool_call) \
+test_cases.py: Test cases for the evaluation suite
+eval_suite.json: Stores the raw logs for the evaluation suite 
+
 
 ## Tech Stack
 Public Notice Scraping: requests, BeatifulSoup \
@@ -36,7 +48,7 @@ PDF Extraction: Docling \
 RAG Documents: LangChain \
 Vector Store: ChromaDB \
 Agent Framework: OpenAI Agents SDK \
-User Interface: Streamlit \
+User Interface: Streamlit 
 
 ## Running the UI
 
@@ -86,22 +98,6 @@ notice_metadata = {
 "text_hash":,
 ```
 
-## Proposed Orchestrator Logging Schema
-```
-agent_log = {
- "conversation_id": one per user conversation,
- "attempt" attempt count - to track retries,
- "timestamp": timestamp allows us to measure latency,
- "source_type": "user" | "agent" | "tool"  (since Agents are treated like tools, may collapse agents into tools) 
- "source_name": agent/tool name,
- "input_message":,
- "routing_decision":,
- "target_type": "user" | "agent" | "tool" (since Agents are treated like tools, may collapse agents into tools),
- "target_name":,
- "output_message"
- "
-}
-```
 
 ### RAGAgent output shape
 
@@ -143,3 +139,18 @@ Example:
   ]
 )
 ```
+
+## Logging Schema
+Because we are using the OpenAI Agents SDK, we were able to inspect traces through the OpenAI SDK web portal. To be able to inspect them locally (and evaluate the behavior of the system using our test cases), we created some lightweight logs:
+```
+trace_info = {
+    "question":user_query,
+    "tool_calls":,
+    "guardrail_tripped":True/False,
+    "guardrail_reason":,
+    "tools_called":[rag | web_search],
+    "sources",
+    "latency_ms":latency in ms
+}
+```
+It should be noted that the latency is measuring the orchestrator latency,  not the latency of the answer agent (which is only responsible for reformatting the information found and providing 
