@@ -153,4 +153,4 @@ trace_info = {
     "latency_ms":latency in ms
 }
 ```
-It should be noted that the latency is measuring the orchestrator latency,  not the latency of the answer agent (which is only responsible for reformatting the information found and providing 
+It should be noted that the latency is measuring the orchestrator latency,  not the latency of the answer agent (which is only responsible for reformatting the information found and providing it to the user)
