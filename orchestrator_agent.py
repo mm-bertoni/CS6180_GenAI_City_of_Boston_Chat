@@ -1,7 +1,7 @@
 from openai import OpenAI
 from agents import Agent, Runner, WebSearchTool, GuardrailFunctionOutput, InputGuardrailTripwireTriggered, RunContextWrapper, TResponseInputItem
 from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
-from rag_agent.rag_agent import rag_agent, pop_sources
+from rag_agent.rag_agent import rag_agent, pop_sources, set_question
 from agents.guardrail import input_guardrail
 from pydantic import BaseModel
 from datetime import datetime
@@ -126,6 +126,7 @@ class MultiAgent():
         calls_by_id = {}
 
         try:
+            set_question(user_query)
             result = await Runner.run(self.orchestrator_agent, user_query)
 
             for item in result.new_items:

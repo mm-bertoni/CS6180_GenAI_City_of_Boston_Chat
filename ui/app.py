@@ -15,6 +15,7 @@ from ui.backend import DEFAULT_K, EXAMPLE_QUESTIONS, answer_query, backend_statu
 from ui.styles import inject as inject_styles
 from ui.formatting import (
     citation_label,
+    dedupe_web_sources,
     format_event_datetime,
     format_score,
     group_sources,
@@ -22,10 +23,14 @@ from ui.formatting import (
     snippet,
     source_kind,
     source_label,
+    split_sources,
+    web_link_text,
 )
 
 USER_AVATAR = ":material/person:"
 ASSISTANT_AVATAR = ":material/account_balance:"
+
+LOG_PATH = REPO_ROOT / "logs" / "ui_turns.jsonl"
 
 st.set_page_config(
     page_title="Boston Public Notices Assistant",
@@ -67,6 +72,21 @@ def log_record(query, answer_text, sources, duration_ms, trace):
         "guardrail_tripped": trace.get("guardrail_tripped", False),
         "guardrail_reason": trace.get("guardrail_reason"),
     }
+
+
+def append_log(record):
+    """Append one turn to the shared log file.
+
+    Wrapped in try/except on purpose: a read-only directory or a full disk must
+    not cost the user their answer. The record is in session state either way,
+    so nothing is lost from the transcript download if this fails.
+    """
+    try:
+        LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(LOG_PATH, "a", encoding="utf-8") as log_file:
+            log_file.write(json.dumps(record) + "\n")
+    except OSError:
+        pass
 
 
 def ask(prompt):
@@ -162,6 +182,9 @@ def render_sidebar():
                 mime="application/x-ndjson",
             )
         st.caption(f"conversation_id `{st.session_state.conversation_id}`")
+        if LOG_PATH.exists():
+            turns = sum(1 for _ in open(LOG_PATH, encoding="utf-8"))
+            st.caption(f"all runs logged to `logs/ui_turns.jsonl` ({turns} turns)")
 
 
 def clear_conversation():
@@ -173,17 +196,39 @@ def clear_conversation():
     st.session_state.pending_prompt = None
 
 
-def render_sources(sources, turn_index=0):
-    if not sources:
+def render_web_sources(web):
+    """Web results: a URL"""
+    web = dedupe_web_sources(web)
+    if not web:
+        return
+
+    st.markdown("**Web results**")
+    with st.container(border=True, key=f"web_{id(web)}"):
         st.caption(
-            ":material/search_off: No public notices cited. The answer above was "
-            "not drawn from the indexed collection - see 'What this covers'."
+            ":material/travel_explore: From a Boston.gov web search, not the "
+            "indexed notices. These pages were visited to answer the question."
         )
+        for src in web:
+            st.markdown(f"- [{web_link_text(src['url'])}]({src['url']})")
+
+
+def render_sources(sources, turn_index=0):
+    notices, web = split_sources(sources)
+
+    if not notices and not web:
+        st.caption(
+            ":material/search_off: No sources cited. The answer above was not "
+            "drawn from the indexed collection - see 'What this covers'."
+        )
+        return
+
+    if not notices:
+        render_web_sources(web)
         return
 
     st.markdown("**Sources**")
 
-    for _notice_id, items in group_sources(sources):
+    for _notice_id, items in group_sources(notices):
         head = items[0][1]
         with st.container(border=True, key=f"source_{turn_index}_{_notice_id}"):
             st.markdown(f"**[{head['title']}]({head['url']})**")
@@ -199,9 +244,11 @@ def render_sources(sources, turn_index=0):
                 with st.expander(f"{index}. {source_kind(src)} - {source_label(src)}", icon=icon):
                     st.markdown(snippet(src.get("text", "")))
 
+    render_web_sources(web)
+
     if st.session_state.get("show_debug"):
         with st.expander("Retrieval debug", icon=":material/bug_report:"):
-            for index, src in enumerate(sources, 1):
+            for index, src in enumerate(notices, 1):
                 st.markdown(
                     f"`{index}` notice `{src.get('notice_id')}` · "
                     f"{src.get('source_type')} · {format_score(src.get('score', 0.0))}"
@@ -302,9 +349,9 @@ def main():
             "trace": trace,
         }
     )
-    st.session_state.turn_log.append(
-        log_record(prompt, answer_text, sources, duration_ms, trace)
-    )
+    record = log_record(prompt, answer_text, sources, duration_ms, trace)
+    st.session_state.turn_log.append(record)
+    append_log(record)
     st.rerun()
     
 main()
