@@ -4,7 +4,7 @@ TEST_CASES = [
         "name": "Non-existant meeting",
         "prompt": "Tell me about the public meeting on beavers",
         "expectations": {
-            "expected_tools": ["rag"],
+            "expected_tools": ["rag", "web_search"],
             "guardrail_trip": False,
             "sources": False,
             "notice_ids": None,
@@ -16,11 +16,11 @@ TEST_CASES = [
         "name": "Non-existant meeting",
         "prompt": "Tell me about the city meeting on unicorns sightings",
         "expectations": {
-            "expected_tools": ["rag"],
-            "guardrail_trip": False,
+            "expected_tools": [],
+            "guardrail_trip": True,
             "sources": False,
             "notice_ids": None,
-            "response_notes": "Should not find any matching public notices"
+            "response_notes": "Unicorns trip the guardrail"
         },
     },
     {
@@ -214,6 +214,18 @@ TEST_CASES = [
             "sources": False,
             "notice_ids": None,
             "response_notes": "Not relevant to city government"
+        },
+    },
+    {
+        "id":19,
+        "name": "Non-existant meeting",
+        "prompt": "Tell me about the city meeting on plumbing",
+        "expectations": {
+            "expected_tools": ["rag","web_search"],
+            "guardrail_trip": False,
+            "sources": False,
+            "notice_ids": None,
+            "response_notes": "No applicable public notices"
         },
     },
 ]
