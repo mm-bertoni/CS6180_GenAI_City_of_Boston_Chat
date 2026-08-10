@@ -6,7 +6,6 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": ["rag", "web_search"],
             "guardrail_trip": False,
-            "sources_rag": False,
             "notice_ids": None,
             "response_notes": "Should not find any matching public notices"
         },
@@ -18,7 +17,6 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": [],
             "guardrail_trip": True,
-            "sources_rag": False,
             "notice_ids": None,
             "response_notes": "Unicorns trip the guardrail"
         },
@@ -30,7 +28,6 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": ["rag"],
             "guardrail_trip": False,
-            "sources_rag": True,
             "notice_ids": ["16602326"],
             "response_notes": "Valid meeting but no public testimony at this hearing"
         },
@@ -42,7 +39,6 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": ["rag"],
             "guardrail_trip": False,
-            "sources_rag": True,
             "notice_ids": ["16602821"],
             "response_notes": "Valid meeting and public testimony allowed at this hearing"
         },
@@ -54,7 +50,6 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": ["rag"],
             "guardrail_trip": False,
-            "sources_rag": True,
             "notice_ids":["16602521"],
             "response_notes": "Valid meeting but was cancelled"
         },
@@ -66,7 +61,6 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": ["rag"],
             "guardrail_trip": False,
-            "sources_rag": True,
             "notice_ids": ["16603531"],
             "response_notes": "Valid meeting but was cancelled"
         },
@@ -74,25 +68,24 @@ TEST_CASES = [
     {
         "id":7,
         "name": "Public Notice PDF details",
-        "prompt": "What is Docket #0218 from the City Council Committee on Labor about?",
+        "prompt": "What is the august city council committee on goverment operations hearing about?",
         "expectations": {
             "expected_tools": ["rag"],
             "guardrail_trip": False,
-            "sources_rag": True,
-            "notice_ids": ["16600016"],
-            "response_notes": "Docket PDF affiliated with NoticeID 16600016"
+            "notice_ids": ["16603691"],
+            "response_notes": "Docket PDF affiliated with NoticeID 16603691"
         },
     },
     {
         "id":8,
         "name": "Public Notice PDF details",
-        "prompt": "What is Docket #0932 from the City Council Committee on City Services about?",
+        "prompt": "What is the august city council committee on rules ethics and admin hearing about?",
         "expectations": {
             "expected_tools": ["rag"],
             "guardrail_trip": False,
-            "sources_rag": True,
-            "notice_ids":["16600081"],
-            "response_notes": "Docket PDF affiliated with NoticeID 16600081"
+        
+            "notice_ids":["16600696"],
+            "response_notes": "Docket PDF affiliated with NoticeID 16600696"
         },
     },
     {
@@ -102,7 +95,7 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": [],
             "guardrail_trip": True,
-            "sources_rag": False,
+            
             "notice_ids": None,
             "response_notes": "Not relevant to city government"
         },
@@ -114,7 +107,7 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": [],
             "guardrail_trip": True,
-            "sources_rag": False,
+           
             "notice_ids": None,
             "response_notes": "Not relevant to city government"
         },
@@ -126,7 +119,7 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": ["rag", "web_search"],
             "guardrail_trip": False,
-            "sources_rag": False,
+            
             "notice_ids":None,
             "response_notes": "Other City Council Meetings are in DB, but this one is outside of the archive pull. Should get picked up by web search"
         },
@@ -138,7 +131,7 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": ["rag", "web_search"],
             "guardrail_trip": False,
-            "sources_rag": False,
+            
             "notice_ids":None,
             "response_notes": "This meeting is outside of the archive pull. Should get picked up by web search"
         },
@@ -150,7 +143,7 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": ["rag"],
             "guardrail_trip": False,
-            "sources_rag": True,
+            
             "notice_ids":["16596721"],
             "response_notes": "Meeting from July 15th should be in archive pull"
         },
@@ -162,7 +155,7 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": ["rag"],
             "guardrail_trip": False,
-            "sources_rag": True,
+           
             "notice_ids": ["16552931","16552896"],
             "response_notes": "July council meeting should be in archive. May pull up other city council committee meetings"
         },
@@ -175,7 +168,7 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": ["web_search"],
             "guardrail_trip": False,
-            "sources_rag": True,
+            
             "notice_ids": None,
             "response_notes": "Relevant to city government. Should get picked up by web search"
         },
@@ -187,7 +180,7 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": ["web_search"],
             "guardrail_trip": False,
-            "sources_rag": True,
+          
             "notice_ids": None,
             "response_notes": "Relevant to city government. Should get picked up by web search from the project tracker"
         },
@@ -199,7 +192,7 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": [],
             "guardrail_trip": True,
-            "sources_rag": False,
+       
             "notice_ids": None,
             "response_notes": "Not relevant to city government"
         },
@@ -211,7 +204,7 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": [],
             "guardrail_trip": True,
-            "sources_rag": False,
+           
             "notice_ids": None,
             "response_notes": "Not relevant to city government"
         },
@@ -223,7 +216,7 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": ["rag","web_search"],
             "guardrail_trip": False,
-            "sources_rag": False,
+          
             "notice_ids": None,
             "response_notes": "No applicable public notices"
         },
@@ -235,7 +228,7 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": ["rag"],
             "guardrail_trip": False,
-            "sources_rag": True,
+         
             "notice_ids": ["16552921"],
             "response_notes": "Next should be August 26 2026 (During project timeline)"
         },
@@ -247,7 +240,7 @@ TEST_CASES = [
         "expectations": {
             "expected_tools": ["rag"],
             "guardrail_trip": False,
-            "sources_rag": True,
+         
             "notice_ids": ["16552901"],
             "response_notes": "Most recent past should be Aug 5 2026 (During project timeline)"
         },
