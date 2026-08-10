@@ -241,7 +241,7 @@ vectorstore = Chroma(
 # Prepended to every chunk's text before embedding.
 def chunk_header(meta):
     title = (meta.get("title") or "").replace(" | Boston.gov", "")
-    return f"{title} | event {meta.get('event_datetime')}"
+    return f"{title} | event {meta.get('event_datetime') | {meta.get('file_label')}}"
 
 
 # Check if something is already embedded to Chroma
