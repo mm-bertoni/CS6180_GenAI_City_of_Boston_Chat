@@ -54,17 +54,40 @@ User Interface: Streamlit
 
 ## Running the UI
 
-**Prerequisites**
-- `open_ai_api_key.txt` in the repo root, containing the key
-- A populated `chroma_db/`. It is loaded in the repo, but if there are any issues loading the db, can run `notice-scraping.ipynb` and then `archive-scraping.ipynb` to freshly populate the db.
-- The `chroma_db` is up to date as of August 10th 2026. If you would like to pull the latest notices, run `notice-scraping.ipynb` to pull the currently active notices. 
+**1. Set up the environment** (Python 3.12 or newer, run from the repo root)
 
-**Run it**
+Windows:
 ```
-venv/Scripts/python.exe -m streamlit run ui/app.py
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-The first launch takes about 30 seconds while the embedding model loads. That is
+macOS / Linux:
+```
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+The install pulls in torch via sentence-transformers, so it takes a few minutes
+and about 2 GB.
+
+**2. Add your API key**
+
+Create `open_ai_api_key.txt` in the repo root containing the key and nothing else.
+
+**3. Check the database**
+
+`chroma_db/` is committed to the repo, so no scraping is needed. If it fails to
+load, run `notice-scraping.ipynb` and then `archive-scraping.ipynb` to rebuild it.
+
+**4. Run**
+```
+streamlit run ui/app.py
+```
+
+Must be run from the repo root. The first launch takes about 30 seconds while the embedding model loads. That is
 cached afterwards, so later questions only pay for the agents themselves
 (roughly 10-15s for a notice question, longer if it falls back to web search).
 
