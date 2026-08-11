@@ -41,7 +41,7 @@ eval_testing_baseline.ipynb: Runs 21 test queries on the MultiAgentNoRAG() class
 test_cases.py: Test cases for the evaluation suite
 eval_suite_multiagent.json: Stores the raw logs for the evaluation suite on MultiAgent() (with RAG)\
 eval_suite_no_rag.json: Stores the raw logs for the evaluation suite on MultiAgentNoRAG() (Baseline without RAG)
-
+city_of_boston_RAG.ipynb: Read-only retrieval experiments against chroma_db/. Contains a standalone copy of an earlier pipeline for experimentation. 
 
 ## Tech Stack
 Public Notice Scraping: requests, BeatifulSoup \
