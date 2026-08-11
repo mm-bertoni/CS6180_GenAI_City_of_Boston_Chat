@@ -57,6 +57,7 @@ User Interface: Streamlit
 **Prerequisites**
 - `open_ai_api_key.txt` in the repo root, containing the key
 - A populated `chroma_db/`. It is loaded in the repo, but if there are any issues loading the db, can run `notice-scraping.ipynb` and then `archive-scraping.ipynb` to freshly populate the db.
+- The `chroma_db` is up to date as of August 10th 2026. If you would like to pull the latest notices, run `notice-scraping.ipynb` to pull the currently active notices. 
 
 **Run it**
 ```
