@@ -22,7 +22,7 @@ class MultiAgent():
 
     def __init__(self):
         self.client = OpenAI()
-        self.model = 'gpt-4o-mini'  # model used for orchestrator and all subagents
+        self.model = 'gpt-4o-mini'  # model used for orchestrator and all subagents unless specified
     
             
         # Subagents

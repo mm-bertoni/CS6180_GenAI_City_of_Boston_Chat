@@ -68,7 +68,7 @@ TEST_CASES = [
     {
         "id":7,
         "name": "Public Notice PDF details",
-        "prompt": "What is the august city council committee on goverment operations hearing about?",
+        "prompt": "What is the august 11th city council committee on goverment operations hearing about?",
         "expectations": {
             "expected_tools": ["rag"],
             "guardrail_trip": False,
@@ -79,7 +79,7 @@ TEST_CASES = [
     {
         "id":8,
         "name": "Public Notice PDF details",
-        "prompt": "What is the august city council committee on rules ethics and admin hearing about?",
+        "prompt": "What is the august 13th city council committee on rules ethics and admin hearing about?",
         "expectations": {
             "expected_tools": ["rag"],
             "guardrail_trip": False,
@@ -245,4 +245,5 @@ TEST_CASES = [
             "response_notes": "Most recent past should be Aug 5 2026 (During project timeline)"
         },
     },
+    
 ]
