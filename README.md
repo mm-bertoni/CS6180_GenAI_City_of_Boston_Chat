@@ -18,8 +18,8 @@ Our project is a multi-agentic AI chatbot that uses RAG for questions about publ
 ## File Descriptions
 ### Agents
 rag_agent/rag_agent.py: RAG Agent
-orchestrator_agent.py: Web Search Agent, Answer Agent, Guardrail Agent and Orchestrator Agent 
-
+orchestrator_agent.py: Web Search Agent, Answer Agent, Guardrail Agent and Orchestrator Agent with access to RAG Agent
+orchestrator_agent_no_rag.py: Web Search Agent, Answer Agent, Guardrail Agent and Orchestrator Agent with NO RAG Agent (The Baseline for comparison)
 ### Public Notice Scraping
 notice-scraping.ipynb: Jupyter notebook to scrape all of the current public notices (for future public meetings) \
 archive-scraping.ipynb: Jupyter notebook to scrape the most recent 5% of archived public notices (subset selected due to large size of archive records) \ 
@@ -36,9 +36,11 @@ ui/tests/: Unit tests for formatting.py. Run with `python -m pytest ui/tests/ -q
 .streamlit/config.toml: Theme (light and dark) plus `fileWatcherType = "none"`, which is required - torch breaks Streamlit's file watcher. 
 
 ### Evaluation/Testing
-eval_testing.ipynb: Runs 21 test queries and compares the resulting sources and tool_calls to the expecation. Also calculates latency (across the entire test, and then segmented by tool_call) \
+eval_testing.ipynb: Runs 21 test queries on the MultiAgent() class (with RAG access) and compares the resulting sources and tool_calls to the expecation. Also calculates latency (across the entire test, and then segmented by tool_call) \
+eval_testing_baseline.ipynb: Runs 21 test queries on the MultiAgentNoRAG() class (baseline with No RAG) and compares the resulting sources and tool_calls to the expecation. Also calculates latency (across the entire test, and then segmented by tool_call) \
 test_cases.py: Test cases for the evaluation suite
-eval_suite.json: Stores the raw logs for the evaluation suite 
+eval_suite_multiagent.json: Stores the raw logs for the evaluation suite on MultiAgent() (with RAG)\
+eval_suite_no_rag.json: Stores the raw logs for the evaluation suite on MultiAgentNoRAG() (Baseline without RAG)
 
 
 ## Tech Stack
@@ -54,7 +56,7 @@ User Interface: Streamlit
 
 **Prerequisites**
 - `open_ai_api_key.txt` in the repo root, containing the key
-- A populated `chroma_db/`. It is gitignored, so on a fresh clone run `notice-scraping.ipynb` and then `archive-scraping.ipynb` first.
+- A populated `chroma_db/`. It is loaded in the repo, but if there are any issues loading the db, can run `notice-scraping.ipynb` and then `archive-scraping.ipynb` to freshly populate the db.
 
 **Run it**
 ```
